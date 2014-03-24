@@ -1,0 +1,6 @@
+$(document).on("click", "ul[data-tabs='header'] > li", function () {
+  var object = $(this);
+  object.siblings('.active').removeClass('active').end().addClass('active');
+  object.parent().siblings("[data-tabs='body']").find('>li').removeClass('active').eq(object.index()).addClass('active');
+  return false;
+})
