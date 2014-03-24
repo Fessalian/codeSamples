@@ -1,0 +1,30 @@
+'use strict';
+
+auctionApp.factory('Mediator', ['$rootScope', function ( $rootScope ) {
+  var eventObject = {};
+  var bareEvent = undefined;
+
+  var setNewListener = function ( eventName, callerName, callback ) {
+    if ( eventObject[eventName+callerName] ) { eventObject[eventName+callerName].off(); };
+    registerListener(eventName, callerName, callback);
+  };
+
+  var sendEvent = function ( eventName, data ) {
+    $rootScope.$emit(eventName, data);
+  };
+
+  var registerListener = function ( eventName, callerName, callback ) {
+    bareEvent = {
+      eventName:    eventName,
+      callerName:   callerName,
+      off:          $rootScope.$on(eventName, callback)
+    };
+
+    eventObject[eventName+callerName] = bareEvent;
+  };
+
+  return {
+    on:       setNewListener,
+    trigger:  sendEvent
+  };
+}]);
