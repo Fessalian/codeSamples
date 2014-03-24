@@ -1,0 +1,37 @@
+class WebsocketsController < WebsocketRails::BaseController
+  include SessionHelper
+
+  before_filter :current_user, :prepare_params
+
+  def current_user
+    @current_user ||= User.where(id: request.cookie_jar.signed[:auction_session]).first if request.cookie_jar.signed[:auction_session]
+  end
+
+  def respond_with object, controller=nil, action=nil, locals=nil
+    controller = controller_name if controller.blank?
+    action = action_name if action.blank?
+    locals = {} if locals.blank?
+    json_respond = Rabl::Renderer.new("#{controller}/#{action}", object, view_path: 'app/views', format: 'json', locals: locals).render
+    send_message "#{controller}.#{action}", json_respond, namespace: "#{controller}"
+  end
+
+  def respond_with_json object, controller=nil, action=nil
+    controller = controller_name if controller.blank?
+    action = action_name if action.blank?
+    send_message "#{controller}.#{action}", object.to_json, namespace: "#{controller}"
+  end
+
+  def prepare_params
+    @params = JSON.parse(message)
+  end
+
+  def save_logs message, auction=nil
+    Log.create(
+                user: current_user || "unknown user",
+                message: message,
+                controller_action: "#{controller_name}-#{action_name}",
+                auction: auction
+      )
+  end
+
+end
