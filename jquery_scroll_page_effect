@@ -1,0 +1,115 @@
+jQuery(
+  function ( $ ) {
+
+    window.CustomPriorObject = window.CustomPriorObject || {};
+
+    CustomPriorObject.scrollPage = {
+      window:           undefined,
+      pages:            undefined,
+      scrollPageHeight: undefined,
+      changeWindowSize: function () {
+        this.window.size = {
+          height: this.window.height(),
+          width:  this.window.width()
+        };
+      },
+
+      resizeWindow: function () {
+        var currentObject = CustomPriorObject.scrollPage;    /* interference pattern*/
+        currentObject.setDefaultState();
+        currentObject.changeWindowSize();
+        currentObject.scrollPageHeight = ~~( currentObject.window.size.height / 4 );
+        currentObject.pages.css({
+          "height": currentObject.window.size.height,
+          "width":  currentObject.window.size.width
+        });
+
+        return $("body").css( "height", currentObject.window.size.height );
+      },
+
+      setDefaultState: function () {
+        return this.pages.css("top", 0).attr("section-scroll-page", "").eq(0).attr("section-scroll-page", "active-page");
+      },
+
+      getActivePage: function () {
+        return this.pages.parent().find("[scroll-active-page=active-page]");
+      },
+
+      movePage: function ( currentPage ) {
+        return currentPage.animate({ "top":  currentPage.params.currentScrollHeight }, 100 , 'linear' );
+      },
+
+      isLastPage: function ( currentPage ) {
+        return this.pages.length-1 === currentPage.index();
+      },
+
+      isFirstPage: function ( currentPage ) {
+        return currentPage.index() === 0;
+      },
+
+      nextPage: function ( currentPage ) {
+        var newPage = currentPage.next("[section-scroll-pages]");
+        if ( newPage.length ) { this.togglePages( newPage ); };
+      },
+
+      prevPage: function ( currentPage ) {
+        var prevPage = currentPage.prev("[section-scroll-pages]");
+        if ( prevPage.length ) { this.togglePages( prevPage ); };
+      },
+
+      togglePages: function ( page ) {
+        this.pages.attr("section-scroll-page", "");
+        page.attr("section-scroll-page", "active-page");                  
+      },
+
+      checkPageBoundaries: function ( currentPage ) {
+        if ( currentPage.params.deltaY > 0 ) {
+          if ( currentPage.params.pageTop >= 0 ) {
+            this.prevPage( currentPage );
+          } else if ( !this.isFirstPage( currentPage ) || currentPage.params.pageTop !== 0 ) {
+            currentPage.params.currentScrollHeight = currentPage.params.pageTop + currentPage.params.currentScrollHeight;
+            if ( currentPage.params.currentScrollHeight >= 0 ) { currentPage.params.currentScrollHeight = 0; };
+            this.movePage( currentPage );
+          };
+        } else {
+          if ( this.window.size.height + currentPage.params.pageTop <= this.scrollPageHeight*2 ) {
+            currentPage.params.currentScrollHeight =  this.window.size.height*-1; /* :) */
+            this.movePage( currentPage );
+            this.nextPage( currentPage );
+          } else if ( !this.isLastPage( currentPage ) ) {
+            currentPage.params.currentScrollHeight = currentPage.params.pageTop - currentPage.params.currentScrollHeight;
+            if ( currentPage.params.currentScrollHeight >= 0 ) { currentPage.params.currentScrollHeight = 0; };
+            this.movePage( currentPage );
+          };
+        };
+      },
+
+      slidePages: function ( event, delta, deltaX, deltaY ) {
+        var currentObject = this.scrollPage,
+            currentPage = currentObject.getActivePage();
+        currentPage.params = {
+          deltaY:               deltaY,
+          pageTop:              parseInt( currentPage.css("top"), 10 ),
+          currentScrollHeight:  currentObject.scrollPageHeight
+        };
+        return currentObject.checkPageBoundaries( currentPage );
+      },
+
+      addEvents: function () {
+        return this.window
+          .on("mousewheel", $.throttle(this.slidePages,   150) )
+          .on("resize",     $.throttle(this.resizeWindow, 150) );
+      },
+
+      initialization: function () {
+        this.window           = $(window);
+        this.pages            = $("[section-scroll-pages]");
+        this.scrollPageHeight = 150;
+        this.pages.show(0);
+        this.resizeWindow();
+        this.addEvents();
+        return this;
+      }
+    };
+  }
+);
