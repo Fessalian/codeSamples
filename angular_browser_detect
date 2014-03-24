@@ -1,0 +1,82 @@
+'use strict';
+
+auctionApp.factory('browser_detect', [$window, function (window) {
+
+  var getBrowser = function() {
+    var browserNavigator, browserUserAgent;
+    var browserDetection, getWebKitVersionNumber, getWebKitBrowserData, getBrowserData, isSupportedBrowser,
+    browserVersionSupport;
+
+
+    browserNavigator = window.navigator;
+    browserUserAgent = browserNavigator.userAgent;
+
+    browserDetection = {};
+
+    getWebKitVersionNumber = function ( versionNumberRegExp ) {
+      return $parseFloat(browserNavigator.appVersion.match(versionNumberRegExp)[1]);
+    };
+
+    getWebKitBrowserData = function () {
+      if (browserNavigator.vendor.match(/google/i)) {
+        browserDetection.chrome  = true;
+        browserDetection.version = getWebKitVersionNumber(/chrome\/(.\w)/i);
+      };
+      if (browserNavigator.vendor.match(/apple/i)) {
+        browserDetection.safari  = true;
+        browserDetection.version = getWebKitVersionNumber(/version\/(.\D\d)/i);
+      };
+    };
+
+    getBrowserData = function ( pattern ) {
+      browserMatch = {
+        browserDetection: pattern[1] || "",
+        version: pattern[2] || "0"
+      };
+
+      if (browserMatch.browserDetection) {
+        browserDetection[browserMatch.browserDetection] = true;
+        browserDetection.version = parseFloat(browserMatch.version);
+      };
+      if (browserDetection.webkit) {
+        getWebKitBrowserData();
+      };
+    };
+
+    return browser = browser || (function() {
+      var browserRegExp, browserMatch, match, ua;
+      browserRegExp = {
+        rwebkit:  /(webkit)[ \/]([\w.]+)/,
+        ropera:   /(opera)(?:.*version)?[ \/]([\w.]+)/,
+        rmsie:    /(msie) ([\w.]+)/,
+        rmozilla: /(mozilla)(?:.*? rv:([\w.]+))?/
+      };
+
+      ua = browserUserAgent.toLowerCase();
+      match = browserRegExp.rwebkit.exec(ua) ||
+              browserRegExp.ropera.exec(ua)  ||
+              browserRegExp.rmsie.exec(ua)   ||
+              ua.indexOf("compatible") < 0 && browserRegExp.rmozilla.exec(ua) || [];
+
+      getBrowserData( match );
+      return browserDetection;
+      })();
+    };
+
+    isSupportedBrowser = function( container ) {
+      var browser, result;
+      browser = getBrowser();
+      result = browserVersionSupport(browser.mozilla, browser.version, 16 ) ||
+               browserVersionSupport(browser.msie,    browser.version, 10) ||
+               browserVersionSupport(browser.chrome,  browser.version, 20) ||
+               browserVersionSupport(browser.safari,  browser.version, 6);
+
+      return result;
+    };
+
+    browserVersionSupport: function( browser, version, numberOfVersion ) {
+      return browser && version >= numberOfVersion;
+    },
+
+
+}]);
